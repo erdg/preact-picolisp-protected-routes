@@ -51,7 +51,19 @@
             (prinl "Access-Control-Allow-Origin: *^M")
             (prinl "^M") ) ) ) )
 
-
+(de accessProfile (Nm)
+   (let [Json  (json~decode *Post)
+         Token (decodeJWT "secret" (getJson "token" Json)) ]
+      (ifn (= Nm (lowc (getJson "sub" Token)))
+        (prog 
+            (prinl "HTTP/1.0 403 Forbidden^M") 
+            (prinl "Access-Control-Allow-Origin: *^M")
+            (prinl "^M") )
+         (prog
+            (prinl "HTTP/1.0 204 No Content^M") 
+            (prinl "Access-Control-Allow-Origin: *^M")
+            (prinl "^M") ) ) ) )
+        
 (de main () (pool "app.db"))
 
 (de go () (server 4040)) 

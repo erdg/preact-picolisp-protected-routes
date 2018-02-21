@@ -110,12 +110,13 @@ export default class App extends Component {
 
                   </form>
 
-                  <Link href="/open">Unrestricted Route</Link>
-                  <Link href="/closed">Restricted Route</Link>
+                  <Link class="column" href="/open">Unrestricted Route</Link>
+                  <Link class="column float-right" href="/closed">Restricted Route</Link>
 
                   <Router>
                      <RestrictedRoute path="/closed" />
                      <UnrestrictedRoute path="/open" />
+                     <Profile path="/profile/:name" />
                   </Router>
 
                </div>
@@ -137,6 +138,7 @@ export default class App extends Component {
 //
 class RestrictedRoute extends Component {
    state = {
+      loading: true,
       canAccess: false
    }
 
@@ -148,7 +150,7 @@ class RestrictedRoute extends Component {
          }
       )
          .then( res => {
-            console.log(res.ok);
+            this.setState({ loading: false });
             if ( res.ok ) {
                this.setState({ canAccess: true });
             }
@@ -156,10 +158,46 @@ class RestrictedRoute extends Component {
    }
 
    render () {
-      if ( this.state.canAccess ) {
-         return ( <h1>Welcome to the Restricted Route</h1> )
+      if ( this.state.loading ) {
+         return ( <h1 class="text-center text-gray">Loading...</h1> )
+      } else if ( this.state.canAccess ) {
+         return ( <h1 class="text-center">Welcome to the Restricted Route</h1> )
       } else {
-         return ( <h1>Forbidden</h1> )
+         return ( <h1 class="text-center">Access Denied</h1> )
+      }
+   }
+}
+
+// so much repeated code, needs HOC
+class Profile extends Component {
+   state = {
+      loading: true,
+      canAccess: false
+   }
+
+   componentDidMount () {
+      fetch('http://localhost:4040/!accessProfile?' + this.props.name,
+         {
+            method: 'POST',
+            body: JSON.stringify({ token: sessionStorage.getItem('token') })
+         }
+      )
+         .then( res => {
+            this.setState({ loading: false });
+            if ( res.ok ) {
+               this.setState({ canAccess: true });
+            }
+         })
+   }
+
+   // name comes from the router
+   render ( {name}, state ) {
+      if ( this.state.loading ) {
+         return ( <h1 class="text-center text-gray">Loading...</h1> )
+      } else if ( this.state.canAccess ) {
+         return ( <h1 class="text-center">Welcome { name }!</h1> )
+      } else {
+         return ( <h1 class="text-center">Access Denied</h1> )
       }
    }
 }
