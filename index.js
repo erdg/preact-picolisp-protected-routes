@@ -4,14 +4,6 @@ import { Component } from 'preact';
 import Router from 'preact-router';
 import { Link } from 'preact-router/match';
 
-// TODO -- implement restricted routes
-//
-// /users/:name
-//
-// checks if there is a token in sessionStorage and that 'name'
-// in the URL matches 'name' in the token. Access granted upon
-// success, else 403 (forbidden) is returned.
-
 export default class App extends Component {
    state = {
       name: '',
@@ -110,11 +102,13 @@ export default class App extends Component {
 
                   </form>
 
-                  <Link class="column" href="/open">Unrestricted Route</Link>
-                  <Link class="column float-right" href="/closed">Restricted Route</Link>
+                  <Link class="d-block" href="/open">Unrestricted Route</Link>
+                  <Link class="d-block" href="/closed">Restricted Route</Link>
+                  <Link class="d-block" href="/closed-hoc">Restricted Route (HOC)</Link>
 
                   <Router>
                      <RestrictedRoute path="/closed" />
+                     <RestrictedRouteWithAuth path="/closed-hoc" />
                      <UnrestrictedRoute path="/open" />
                      <Profile path="/profile/:name" />
                   </Router>
@@ -125,7 +119,7 @@ export default class App extends Component {
       );
    }
 }
-
+//
 // FIXME -- this feels hacky
 //
 // still flashes 'Forbidden' on navigation to route when access is
@@ -168,6 +162,49 @@ class RestrictedRoute extends Component {
    }
 }
 
+const withAuth = ComposedComponent => 
+   class extends Component {
+      state = {
+         loading: true,
+         canAccess: false
+      }
+
+      componentDidMount () {
+         fetch('http://localhost:4040/!checkToken',
+            {
+               method: 'POST',
+               body: JSON.stringify({ token: sessionStorage.getItem('token') })
+            }
+         )
+            .then( res => {
+               this.setState({ loading: false });
+               if ( res.ok ) {
+                  this.setState({ canAccess: true });
+               }
+            })
+      }
+
+      render ( {name}, state ) {
+         if ( this.state.loading ) {
+            return ( <h1 class="text-center text-gray">Loading...</h1> )
+         } else if ( this.state.canAccess ) {
+            return ( <ComposedComponent />)
+         } else {
+            return ( <h1 class="text-center">Access Denied</h1> )
+         }
+      }
+   }
+
+const RestrictedRouteText = () => (
+   <h1>Welcome to the Restricted Route, served from a higher order component!</h1>
+)
+
+const RestrictedRouteWithAuth = withAuth(RestrictedRouteText);
+
+const UnrestrictedRoute = () => (
+   <h1>Welcome to the Unrestricted Route</h1>
+)
+
 // so much repeated code, needs HOC
 class Profile extends Component {
    state = {
@@ -201,7 +238,3 @@ class Profile extends Component {
       }
    }
 }
-
-const UnrestrictedRoute = () => (
-   <h1>Welcome to the Unrestricted Route</h1>
-)
