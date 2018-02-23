@@ -54,6 +54,7 @@
 
 (zero *Http1)
 
+#{ DON'T NEED
 (de *Mimes
    (`(chop "html") "text/html; charset=utf-8")
    (`(chop "svg") "image/svg+xml; charset=utf-8")
@@ -85,7 +86,10 @@
 (de mimetype (File Typ)
    (in (list 'file "-b" (if Typ "--mime-type" "--mime") File)
       (line T) ) )
+}#
 
+
+### DON'T NEED??? MIGHT AS WELL KEEP...
 ### HTTP-Client ###
 (de client (Host Port How . Prg)
    (let? Sock (connect Host Port)
@@ -180,6 +184,7 @@
 (de notAllowed (X)
    (unless (= X "favicon.ico")
       (msg X " [" *Adr "] not allowed") ) )
+
 #{ DON'T NEED
 # Application startup
 (de app ()
@@ -288,6 +293,7 @@
       (case (lowc (till " ^M^J" T))
          ("host:" (setq *Host (cdr (line))))
          ("referer:" (setq *Referer (cdr (line))))
+#{ DON'T NEED
          ("cookie:"
             (setq *Cookies
                (mapcar
@@ -295,6 +301,7 @@
                      (setq L (split L "="))
                      (cons (htArg (clip (car L))) (htArg (cadr L))) )
                   (split (cdr (line)) ";") ) ) )
+}#
          ("user-agent:" (setq *Agent (cdr (line))))
          ("content-length:" (setq *ContLen (format (cdr (line)))))
          ("content-type:"
