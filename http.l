@@ -8,11 +8,38 @@
 # available  for further processing in *Post.
 
 # JWT's should be sent in the "Authorization" header:
-
+#
 #    Authorization: Bearer <token>
-
+#
 # The JWT will be available for further processing in '*JWT'
 # after the headers have been parsed (in _htHead).
+
+
+# NOTE - if everything goes to hell here...
+# 
+# - start with a fresh copy of 'http.l' 
+#
+# - add "authorization" clause to the 'case' statement in 
+#   '_htHead'. see below.
+#
+# - add changes to POST request handling in 'http'. see below.
+#
+# - GOOD TO GO. start removing stuff again and try not to break it.   
+
+
+# MORE CHANGES - cut out everything that isn't needed.
+#
+# - NEED "!" notation for calling lisp functions from
+#   url.
+#
+# - NEED header parsing, and http response handling (_htHead, http)
+#
+# - do NOT need session or cookie related stuff. server is stateless
+#   and uses JSON Web Tokens (JWT's)
+
+
+
+
 
 # *HPorts *Home *Gate *Host *Port *Port1 *Port% *Http1 *Chunked
 # *Sock *Agent *ContL *ContLen *MPartLim *MPartEnd "*HtSet"
@@ -125,12 +152,14 @@
             ((=0 (dec X)) (run (cddr X)) (bye)) ) )
       (forked) ) )
 
+#{DON'T NEED
 (de baseHRef (Port . @)
    (pass pack
       (or *Gate "http") "://" *Host
       (if *Gate "/" ":")
       (or Port (if *SesId *Port *Port1))
       "/" ) )
+}#
 
 (de https @
    (pass pack "https://" *Host "/" *Port "/" *SesId) )
@@ -151,7 +180,7 @@
 (de notAllowed (X)
    (unless (= X "favicon.ico")
       (msg X " [" *Adr "] not allowed") ) )
-
+#{ DON'T NEED
 # Application startup
 (de app ()
    (unless *SesId
@@ -167,11 +196,12 @@
    (if (assoc (next) "*Cookies")
       (con @ (rest))
       (push '"*Cookies" (cons (arg) (rest))) ) )
+}#
 
 # Handle HTTP-Transaction
 (de http (*HtSock)
-   (use (*Post U L @X)
-      (off *Post *JWT *Port% *ContL *ContLen *Cookies "*Cookies" "*HtSet")
+   (use (*Post *JWT U L @X)
+      (off *Post *JWT *ContL *ContLen *Cookies "*Cookies" "*HtSet")
       (catch 'http
          (in *HtSock
             (case (till " " T)
@@ -213,15 +243,13 @@
                   (setq  *Url (car *Home)  U (cdr *Home)) )
                (out *HtSock
                   (cond
-                     ((match '("-" @X "." "h" "t" "m" "l") U)
-                        (and *SesId (timeout *Timeout))
-                        (apply try L 'html> (extern (ht:Pack @X T))) )
                      ((disallowed)
                         (notAllowed *Url)
                         (http404) )
                      ((= "!" (car U))
                         (and *SesId (timeout *Timeout))
                         (apply (val (intern (ht:Pack (cdr U) T))) L) )
+                     #{ DON'T NEED
                      ((tail '("." "l") U)
                         (and *SesId (timeout *Timeout))
                         (apply script L *Url) )
@@ -231,6 +259,7 @@
                            (http404) ) )
                      ((assoc (stem U ".") *Mimes)
                         (apply httpEcho (cdr @) *Url) )
+                     }#
                      (T (httpEcho *Url "application/octet-stream" 1 T)) ) ) ) ) )
       (and *HtSock (=0 *Http1) (task (close *HtSock))) ) )
 
@@ -247,12 +276,14 @@
       (off *HtSock)
       (throw 'http) )
    (setq *Chunked (gt0 *Http1))
+#{ DON'T NEED
    (if (index "~" U)
       (setq
          *ConId (head @ U)
          U (cdr (nth U @))
          *ConId (pack (if (member "/" *ConId) (cdr @) *ConId)) )
       (off *ConId) )
+}#
    (while
       (case (lowc (till " ^M^J" T))
          ("host:" (setq *Host (cdr (line))))
@@ -375,6 +406,7 @@
          (if Att "attachment" "inline")
          "; filename=\"" File "\"^M" ) ) )
 
+#{ DON'T NEED
 (de httpCookies ()
    (mapc
       '((L)
@@ -387,6 +419,7 @@
          (and (++ L) (prin "; HttpOnly"))
          (prinl) )
       "*Cookies" ) )
+}#
 
 (de respond (S)
    (http1 "application/octet-stream" 0)
@@ -421,11 +454,14 @@
          (prinl "^M")
          (in File (echo)) ) ) )
 
+#{ DON'T NEED
 (de srcUrl (Url)
    (if (or (pre? "http:" Url) (pre? "https:" Url))
       Url
       (baseHRef *Port1 Url) ) )
+}#
 
+#{ DON'T NEED
 (de sesId (Url)
    (if
       (or
@@ -436,6 +472,7 @@
          (pre? "tel:" Url) )
       Url
       (pack *SesId Url) ) )
+}#
 
 (de httpStat (N X . @)
    (let B (fin X)
